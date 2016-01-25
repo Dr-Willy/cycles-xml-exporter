@@ -13,10 +13,11 @@ def export_cycles(fp, scene, inline_textures=False):
     _options = {
         'inline_textures': inline_textures
     }
-
+    fp.write('<cycles>')
     for node in gen_scene_nodes(scene):
         if node is not None:
             write(node, fp)
+    fp.write('</cycles>')
 
     return {'FINISHED'}
 
