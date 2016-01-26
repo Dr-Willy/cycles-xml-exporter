@@ -57,6 +57,9 @@ def write_camera(camera, scene):
         'nearclip': str(camera.clip_start),
         'farclip': str(camera.clip_end),
         'focaldistance': str(camera.dof_distance),
+        'fov': str(math.degrees(camera.angle)),
+        'sensorwidth': str(camera.sensor_width),
+        'sensorheight': str(camera.sensor_height),
     })
 
 
