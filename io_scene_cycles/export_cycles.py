@@ -353,9 +353,9 @@ def wrap_in_transforms(xml_element, object):
     matrix = object.matrix_world
 
     if (object.type == 'CAMERA'):
-        # In cycles, the camera points at its Z axis
-        rot = mathutils.Matrix.Rotation(math.pi, 4, 'X')
-        matrix = matrix.copy() * rot
+        #Cameras looks at -Z
+        scale = mathutils.Matrix.Scale(-1,4,(0,0,1))
+        matrix = matrix.copy() * scale
 
     wrapper = etree.Element('transform', { 'matrix': space_separated_matrix(matrix.transposed()) })
     wrapper.append(xml_element)
