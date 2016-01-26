@@ -144,6 +144,7 @@ def write_material(material, tag_name='shader'):
     xlate = ( ("RGB",                   "color",()),
               ("BSDF_DIFFUSE",          "diffuse_bsdf",()),
               ("BSDF_TRANSPARENT",      "transparent_bsdf",()),
+              ("BSDF_GLOSSY",           "glossy_bsdf",()),
               ("BUMP",                  "bump",()),
               ("FRESNEL",               "fresnel",()),
               ("MATH",                  "math",()),
