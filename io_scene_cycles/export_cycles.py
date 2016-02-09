@@ -161,6 +161,8 @@ def write_material(material, tag_name='shader'):
               ("TEX_MAGIC",             "magic_texture",()),
               ("TEX_NOISE",             "noise_texture",()),
               ("TEX_COORD",             "texture_coordinate",()),
+              ("TEX_CHECKER",           "checker_texture",()),
+              ("NEW_GEOMETRY",          "geometry",()),
             )
     
     node_tree = material.node_tree
