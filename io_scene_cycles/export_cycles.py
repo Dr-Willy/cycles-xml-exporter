@@ -28,6 +28,8 @@ def gen_scene_nodes(scene):
     yield write_material(scene.world, 'background')
 
     for object in scene.objects:
+        if not any([a and b for a,b in zip(scene.layers, object.layers)]): continue
+        if object.hide_render: continue
         materials = getattr(object.data, 'materials', []) or getattr(object, 'materials', [])
         for material in materials:
             if hash(material) not in written_materials:
