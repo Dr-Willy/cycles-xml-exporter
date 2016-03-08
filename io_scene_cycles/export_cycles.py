@@ -8,7 +8,7 @@ import xml.etree.ElementTree as etree
 import xml.dom.minidom as dom
 
 _options = {
-        'inline_textures' : False,
+        'inline_textures' : True,
         'preview'    : True,
         'format_xml' : True,
         'tabsize'    : 2,
@@ -87,20 +87,20 @@ def gen_scene_nodes(scene):
     background = etree.tostring(write_material(scene.world, 'background')).decode()
     if background: yield background
 
-    for ob in scene.object_bases:
-        if( ob.object.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'LAMP'] or
-            not any([a and b for a,b in zip(scene.layers, ob.layers)]) or
-            ob.object.hide_render ):
+    for obj in scene.objects:
+        if( obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'LAMP'] or
+            not any([a and b for a,b in zip(scene.layers, obj.layers)]) or
+            obj.hide_render ):
                continue
 
-        if ob.object.dupli_type == 'NONE':
-            print(ob.object.name)
-            yield from gen_object(ob.object, scene)
-        elif ob.object.dupli_type == "GROUP":
-            for grp_obj in ob.object.dupli_group.objects:
-                yield from gen_object(grp_obj, scene)
+        if obj.dupli_type == 'NONE':
+            print(obj.name)
+            yield from gen_object(obj,scene)
+        elif obj.dupli_type == "GROUP":
+            for grp_obj in obj.dupli_group.objects:
+                yield from gen_object(grp_obj, scene, obj.matrix_world)
         else:
-            print("Duplication not supported:",ob.dupli_type,"Object", ob.name,"ignore")
+            print("Duplication not supported:",obj.dupli_type,"Object", obj.name,"ignore")
             continue
 
 
@@ -112,7 +112,7 @@ def gen_camera(cam):
     yield '</transform>'+NL
 
     
-def gen_object(obj, scene):
+def gen_object(obj, scene, matrix_world_extra=None):
     written_materials = set()
     has_material = False
 
@@ -125,8 +125,10 @@ def gen_object(obj, scene):
             if material_node is not None:
                 written_materials.add(hash(material))
                 yield etree.tostring(material_node).decode()
-    
+
     matrix = obj.matrix_world
+    if matrix_world_extra :
+        matrix = matrix_world_extra * obj.matrix_world
     
     yield from gen_transform_matrix(matrix.transposed(), _options['format_xml'])
 
