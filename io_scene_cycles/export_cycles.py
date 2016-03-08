@@ -80,7 +80,7 @@ def gen_cycles(node):
 
 
 def gen_scene_nodes(scene):
-    yield write_film(scene)
+    yield write_film(scene)+NL
     
     yield from gen_camera(scene.camera)
     background = write_material(scene.world, 'background')
@@ -106,8 +106,8 @@ def gen_scene_nodes(scene):
 def gen_camera(cam):
     matrix = cam.matrix_world * mathutils.Matrix.Scale(-1,4,(0,0,1))
     
-    yield '<transform matrix="'+space_separated_matrix(matrix.transposed())+'" >'+NL
-    yield write_camera(cam.data)
+    yield from gen_transform_matrix(matrix.transposed(), _options['format_xml'])
+    yield write_camera(cam.data)+NL
     yield '</transform>'+NL
 
     
@@ -127,14 +127,14 @@ def gen_object(obj, scene):
     
     matrix = obj.matrix_world
 
-    yield '<transform matrix="'+space_separated_matrix(matrix.transposed())+'" >'+NL
+    yield from gen_transform_matrix(matrix.transposed(), _options['format_xml'])
 
     if has_material : yield '<state shader="'+materials[0].name+'" >'+NL
 
     if   obj.type in ('MESH','CURVE','FONT','SURFACE'):
         yield from gen_mesh(obj.to_mesh(scene, True, 'PREVIEW'))
     else : # obj.type == 'LAMP':
-        yield write_light(obj)
+        yield write_light(obj)+NL
 
     if has_material : yield '</state>'+NL
 
@@ -184,8 +184,6 @@ def write_film(scene):
     size_y = int(scene.render.resolution_y * scale)
 
     return '<film width="'+str(size_x)+'" height="'+str(size_y)+'" />'
-    #return etree.Element('film', {'width': str(size_x), 'height': str(size_y)})
-
 
 
 def write_object(object, scene):
@@ -475,7 +473,7 @@ def gen_mesh(mesh):
         funcformat = lambda uvmap: ' '.join( ' '.join(str(c[0])+' '+str(c[1]) for c in f.uv) for f in uvmap )
         yield from gen_list(uvmap, funcformat, head, col_align, 1)
 
-    yield '/>'
+    yield '/>'+NL
 
 
 def write_mesh(mesh):
@@ -542,8 +540,14 @@ def gen_list(lst, func, header, col_align=True, width=50):
         yield header + '="' + func(lst) + '"' + NL
 
 
-def space_separated_vect(v):
-    return ' '.join( map(str, v) )
+def gen_transform_matrix(mat,col_align=True):
+    l = lambda mat: write_vector(mat[0])
+    yield from gen_list(mat, l, '<transform matrix', col_align, 1)
+    yield '>' + NL
+
+
+def write_vector(v):
+    return ' '.join( str(c) for c in v )
 
 def space_separated_float3(coords):
     float3 = list(map(str, coords))
