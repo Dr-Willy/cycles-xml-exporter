@@ -8,6 +8,7 @@ import xml.etree.ElementTree as etree
 import xml.dom.minidom as dom
 
 _options = {
+        'inline_textures' : False,
         'preview'    : True,
         'format_xml' : True,
         'tabsize'    : 2,
@@ -83,7 +84,7 @@ def gen_scene_nodes(scene):
     yield write_film(scene)+NL
     
     yield from gen_camera(scene.camera)
-    background = write_material(scene.world, 'background')
+    background = etree.tostring(write_material(scene.world, 'background')).decode()
     if background: yield background
 
     for ob in scene.object_bases:
@@ -95,8 +96,8 @@ def gen_scene_nodes(scene):
         if ob.object.dupli_type == 'NONE':
             print(ob.object.name)
             yield from gen_object(ob.object, scene)
-        elif ob.dupli_type == "GROUP":
-            for grp_obj in ob.dupli_group.objects:
+        elif ob.object.dupli_type == "GROUP":
+            for grp_obj in ob.object.dupli_group.objects:
                 yield from gen_object(grp_obj, scene)
         else:
             print("Duplication not supported:",ob.dupli_type,"Object", ob.name,"ignore")
@@ -126,7 +127,7 @@ def gen_object(obj, scene):
                 yield etree.tostring(material_node).decode()
     
     matrix = obj.matrix_world
-
+    
     yield from gen_transform_matrix(matrix.transposed(), _options['format_xml'])
 
     if has_material : yield '<state shader="'+materials[0].name+'" >'+NL
