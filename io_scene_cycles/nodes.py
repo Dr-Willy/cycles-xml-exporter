@@ -2,6 +2,11 @@
 import random
 import xml.etree.ElementTree as etree
 
+from . import util
+
+#_options = export_cycles._options
+_options = {'inline_textures' : True}
+
 #           blender        <--->     cycles
 xlate = ( ("RGB",                   "color",()),
           ("BSDF_DIFFUSE",          "diffuse_bsdf",()),
@@ -106,7 +111,7 @@ def special_node_attrs(node):
     if node.type == 'TEX_IMAGE' and node.image is not None:
         return image_src(node.image)
     elif node.type == 'RGB':
-        color = space_separated_float3(
+        color = util.space_separated_float3(
             node.outputs['Color']
                 .default_value[:3])
 

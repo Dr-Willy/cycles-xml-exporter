@@ -6,7 +6,8 @@ import bpy.types
 import xml.etree.ElementTree as etree
 import xml.dom.minidom as dom
 
-from . import nodes
+from . import nodes,util
+
 write_material = nodes.write_material
 
 _options = {
@@ -17,23 +18,6 @@ _options = {
         'tabwith'    : ' ',
         'endline'    : '\n'
         }
-
-
-def coroutine(func):
-    def starter(*argv, **kwarg):
-        gen = func(*argv, **kwarg)
-        next(gen)
-        return gen
-    return starter
-
-
-@coroutine
-def writer(filepath):
-    with open(filepath, 'w') as fp:
-        while True:
-            data = yield
-            if not data : break
-            fp.write(data)
 
 
 def _format(node):
@@ -55,7 +39,7 @@ format = _format
 NL = _options['endline']
 
 def xml_include(node, filepath):
-    include = writger(filepath)
+    include = util.writer(filepath)
     for data in node:
         writer.send(data)
     writer.close()
@@ -69,7 +53,7 @@ def xml_include(node, filepath):
         
 
 def export_scene(filepath, scene):
-    f = writer(filepath)
+    f = util.writer(filepath)
     nodes = gen_scene_nodes(scene)
     xml = gen_cycles(nodes)
     for data in xml:
@@ -88,8 +72,9 @@ def gen_scene_nodes(scene):
     yield write_film(scene)+NL
     
     yield from gen_camera(scene.camera)
-    background = etree.tostring(write_material(scene.world, 'background')).decode()
-    if background: yield background
+    background = write_material(scene.world, 'background')
+    if background:
+        yield etree.tostring( background ).decode()
 
     for obj in scene.objects:
         if( obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'LAMP'] or
@@ -148,20 +133,6 @@ def gen_object(obj, scene, matrix_world_extra=None):
     yield '</transform>'+NL
 
 
-def wrap_in_transforms(xml_element, object):
-    matrix = object.matrix_world
-
-    if (object.type == 'CAMERA'):
-        #Cameras looks at -Z
-        scale = mathutils.Matrix.Scale(-1,4,(0,0,1))
-        matrix = matrix.copy() * scale
-
-    wrapper = etree.Element('transform', { 'matrix': space_separated_matrix(matrix.transposed()) })
-    wrapper.append(xml_element)
-
-    return wrapper
-
-
 def write_camera(camera):
 
     if camera.type == 'ORTHO':
@@ -191,21 +162,6 @@ def write_film(scene):
     size_y = int(scene.render.resolution_y * scale)
 
     return '<film width="'+str(size_x)+'" height="'+str(size_y)+'" />'
-
-
-def write_object(object, scene):
-    if object.type == 'MESH':
-        node = write_mesh(object.to_mesh)
-    elif object.type == 'LAMP':
-        node = write_light(object)
-    elif object.type == 'CAMERA':
-        node = write_camera(object, scene)
-    else:
-        raise NotImplementedError('Object type: %r' % object.type)
-
-    node = wrap_in_state(node, object)
-    node = wrap_in_transforms(node, object)
-    return node
 
 
 def write_light(l):
@@ -246,53 +202,6 @@ def gen_mesh(mesh):
     yield '/>'+NL
 
 
-def write_mesh(mesh):
-    # generate mesh node
-    nverts = ""
-    verts = ""
-
-    P = ' '.join(space_separated_float3(v.co) for v in mesh.vertices)
-
-    for i, f in enumerate(mesh.tessfaces):
-        nverts += str(len(f.vertices)) + " "
-
-        for v in f.vertices:
-            verts += str(v) + " "
-
-        verts += " "
-
-    return etree.Element('mesh', attrib={'nverts': nverts, 'verts': verts, 'P': P})
-
-
-def wrap_in_transforms(xml_element, object):
-    matrix = object.matrix_world
-
-    if (object.type == 'CAMERA'):
-        #Cameras looks at -Z
-        scale = mathutils.Matrix.Scale(-1,4,(0,0,1))
-        matrix = matrix.copy() * scale
-
-    wrapper = etree.Element('transform', { 'matrix': space_separated_matrix(matrix.transposed()) })
-    wrapper.append(xml_element)
-
-    return wrapper
-
-def wrap_in_state(xml_element, object):
-    # UNSUPPORTED: Meshes with multiple materials
-
-    try:
-        material = getattr(object.data, 'materials', [])[0]
-    except LookupError:
-        return xml_element
-
-    state = etree.Element('state', {
-        'shader': material.name
-    })
-
-    state.append(xml_element)
-
-    return state
-
 def gen_list(lst, func, header, col_align=True, width=50):
     padding = (' '*(len(header)+2)) if col_align else ''
     bs=width
@@ -312,30 +221,7 @@ def gen_list(lst, func, header, col_align=True, width=50):
 
 
 def gen_transform_matrix(mat,col_align=True):
-    l = lambda mat: write_vector(mat[0])
+    l = lambda mat: util.write_vector(mat[0])
     yield from gen_list(mat, l, '<transform matrix', col_align, 1)
     yield '>' + NL
-
-
-def write_vector(v):
-    return ' '.join( str(c) for c in v )
-
-def space_separated_float3(coords):
-    float3 = list(map(str, coords))
-    assert len(float3) == 3, 'tried to serialize %r into a float3' % float3
-    return ' '.join(float3)
-
-def space_separated_float4(coords):
-    float4 = list(map(str, coords))
-    assert len(float4) == 4, 'tried to serialize %r into a float4' % float4
-    return ' '.join(float4)
-
-def space_separated_matrix(matrix):
-    return ' '.join(space_separated_float4(row) + ' ' for row in matrix)
-
-def write(node, fp):
-    # strip(node)
-    s = etree.tostring(node, encoding='unicode')
-    fp.write(s)
-    fp.write('\n')
 
