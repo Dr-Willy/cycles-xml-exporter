@@ -174,6 +174,8 @@ def gen_shader_node_tree(nodes,links,connect_later):
 
 # from the Node Wrangler, by Barte
 def write_material(material, tag_name='shader'):
+#    pass
+#def gen_material(material, tag_name='shader'):
     did_copy = False
     if not material.use_nodes:
         did_copy = True
@@ -183,20 +185,19 @@ def write_material(material, tag_name='shader'):
    
     node_tree = material.node_tree
     # nodes, links = get_nodes_links(context)
-    nodes, links = node_tree.nodes, node_tree.links
+    nodes = list(node_tree.nodes)
+    links = node_tree.links
 
-    output_nodes = list(filter(is_output, nodes))
+    output_nodes = [ n for n in nodes if n.type in ('OUTPUT', 'OUTPUT_WORLD','OUTPUT_MATERIAL')] 
 
-    if not output_nodes:
+    if not len(output_nodes):
         return None
 
-    nodes = list(nodes)  # We don't want to remove the node from the actual scene.
-    nodes.remove(output_nodes[0])
-
-    shader_name = material.name
+    for onode in output_nodes:
+        nodes.remove(onode)
 
     # tag_name is usually 'shader' but could be 'background' for world shaders
-    shader = etree.Element(tag_name, { 'name': shader_name })
+    shader = etree.Element(tag_name, { 'name': material.name })
     connect_later = []
 
     for snode in gen_shader_node_tree(nodes,links,connect_later):
