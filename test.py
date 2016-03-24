@@ -1,16 +1,11 @@
 
-# run this with
-# $ blender some_test_file.blend --background --python test.py
-# and look at the output
-
-from sys import stdout
+# usage: blender -b my_file.blend -P test.py
 
 import bpy
 
-import io_scene_cycles
-from io_scene_cycles.export_cycles import export_cycles
+from io_scene_cycles.export_cycles import export_scene as export
 
-scene = bpy.data.scenes["Scene"]
+scene = bpy.context.scene
 
-export_cycles(stdout, scene)
+export('test.xml', scene)
 

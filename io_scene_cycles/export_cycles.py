@@ -16,50 +16,32 @@ _options = {
         'format_xml' : True,
         'tabsize'    : 2,
         'tabwith'    : ' ',
-        'endline'    : '\n'
+        'endline'    : '\n',
+        'export_mesh': True,
         }
 
 
 def _format(node):
-    global _options
     prefix = _options['tabwith']*_options['tabsize']
-
-    #DONT ! it does copy entire node then yield
-    #yield from [prefix+line for line in node]
-
     for line in node:
         yield prefix+line
 
 
-def _noformat(node, *argv):
+def _noformat(node):
     yield from node
 
 
 format = _format
 NL = _options['endline']
 
-def xml_include(node, filepath):
-    include = util.writer(filepath)
-    for data in node:
-        writer.send(data)
-    writer.close()
+def gen_xml_include(node, filepath):
+    if node :
+        include = util.writer(filepath)
+        for data in node:
+            writer.send(data)
+        writer.close()
+
     yield '<include src="'+filepath+'" />'+NL
-
-
-#def smart_export(file_path, scene):
-#    dirname =os.path.dirname(file_path)
-#    with open(file_path, "w") as fp:
-#        pass
-        
-
-def export_scene(filepath, scene):
-    f = util.writer(filepath)
-    nodes = gen_scene_nodes(scene)
-    xml = gen_cycles(nodes)
-    for data in xml:
-        f.send(data)
-
-    f.close()
 
 
 def gen_cycles(node):
@@ -100,8 +82,9 @@ def gen_camera(cam):
     yield write_camera(cam.data)+NL
     yield '</transform>'+NL
 
-    
-def gen_object(obj, scene, matrix_world_extra=None):
+
+#TODO: try to find a way to avoid passing scene as argument
+def gen_object(obj, scene, matrix_world_extra=None, export_mesh=_options['export_mesh'] ):
     written_materials = set()
     has_material = False
 
@@ -124,6 +107,7 @@ def gen_object(obj, scene, matrix_world_extra=None):
     if has_material : yield '<state shader="'+materials[0].name+'" >'+NL
 
     if   obj.type in ('MESH','CURVE','FONT','SURFACE'):
+        #TODO if not export_mesh : do something with use gen_xml_includes()
         yield from gen_mesh(obj.to_mesh(scene, True, 'PREVIEW'))
     else : # obj.type == 'LAMP':
         yield write_light(obj)+NL
@@ -165,15 +149,8 @@ def write_film(scene):
 
 
 def write_light(l):
-    # TODO export light's shader here? Where?
+    # TODO export light's shader here? Where? :D ?
     return '<light P="'+' '.join(list(map(str,l.location)))+'" />'
-#    return etree.Element('light', {
-#        'P': '%f %f %f' % (
-#            object.location[0],
-#            object.location[1],
-#            object.location[2])
-#    })
-
 
 def gen_mesh(mesh):
     col_align = _options['format_xml'] 
@@ -224,4 +201,42 @@ def gen_transform_matrix(mat,col_align=True):
     l = lambda mat: util.write_vector(mat[0])
     yield from gen_list(mat, l, '<transform matrix', col_align, 1)
     yield '>' + NL
+
+
+def gen_auto(data, args = {bpy.types.Scene : (gen_scene_nodes, ),
+                           #bpy.types.Object: (gen_object, (sc ),
+                           bpy.types.Mesh  : (gen_mesh, ),
+                          }):
+    meta = args[type(data)]
+    yield from meta[0](data, *meta[1:] if len(meta)>1 else ())
+
+
+def export_ninja(filepath, jas ):
+    ''' omg export function for ninjas !!!'''
+    f = util.writer(filepath)
+    f.send('<cycles>'+NL)
+    for n in jas: #only
+        nodes = gen_auto(*n)
+        xml = format(nodes)
+        for data in xml:
+            f.send(data)
+    f.send('</cycles>')
+    f.close()
+
+
+def export(filepath, export_data):
+    f = util.writer(filepath)
+    nodes = gen_auto(export_data)
+    xml = gen_cycles(nodes)
+    for data in xml:
+        f.send(data)
+
+    f.close()
+
+
+def export_scene(filepath, scene):
+    export(filepath, scene)
+
+def export_mesh(filepath, mesh):
+    export(filepath, mesh)
 
