@@ -126,7 +126,7 @@ def write_camera(camera):
     else:
         raise Exception('Camera type %r unknown!' % camera.type)
 
-    return '<camera type="'+camera_type+'" nearclip="'+str(camera.clip_start)+'" farclip="'+str(camera.clip_end)+'" focaldistance="'+str(camera.dof_distance)+'" sensorwidth="'+str(camera.sensor_width)+'" sensorheight="'+str(camera.sensor_height)+'" />'
+    return '<camera type="'+camera_type+'" nearclip="'+str(camera.clip_start)+'" farclip="'+str(camera.clip_end)+'" fov="'+str(math.degrees(camera.angle))+'" sensorwidth="'+str(camera.sensor_width)+'" sensorheight="'+str(camera.sensor_height)+'" />'
 #
 #        # fabio: untested values. assuming to be the same as found here:
 #        # http://www.blender.org/documentation/blender_python_api_2_57_release/bpy.types.Camera.html#bpy.types.Camera.clip_start
