@@ -56,7 +56,7 @@ def gen_scene_nodes(scene):
     yield from gen_camera(scene.camera)
     background = write_material(scene.world, 'background')
     if background:
-        yield etree.tostring( background ).decode()
+        yield etree.tostring( background ).decode()+NL
 
     for obj in scene.objects:
         if( obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'LAMP'] or
@@ -96,7 +96,7 @@ def gen_object(obj, scene, matrix_world_extra=None, export_mesh=_options['export
             material_node = write_material(material)
             if material_node is not None:
                 written_materials.add(hash(material))
-                yield etree.tostring(material_node).decode()
+                yield etree.tostring(material_node).decode()+NL
 
     matrix = obj.matrix_world
     if matrix_world_extra :
@@ -171,7 +171,7 @@ def gen_mesh(mesh):
     uvmap = [m for m in mesh.tessface_uv_textures if m.active_render]
     if len(uvmap):
         uvmap = uvmap[0].data #XXX: what if multiple render active  uvmaps ?
-        head = ' '*sp+'uv'
+        head = ' '*sp+'UV'
         f = None #... 
         funcformat = lambda uvmap: ' '.join( ' '.join(str(c[0])+' '+str(c[1]) for c in f.uv) for f in uvmap )
         yield from gen_list(uvmap, funcformat, head, col_align, 1)
