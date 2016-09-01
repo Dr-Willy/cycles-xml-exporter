@@ -40,6 +40,8 @@ def xlateType(typename ):
     for i in xlate:
         if i[0]==typename:
             return i[1]
+    if typename.startswith('BSDF_'):
+        return typename.split('_')[1].lower()+'_bsdf'
     return typename.lower()
 
 def isConnected(socket, links):
